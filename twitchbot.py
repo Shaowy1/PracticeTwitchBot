@@ -3,6 +3,11 @@ import types
 import config
 from collections import namedtuple
 
+TEMPLATE_COMMANDS = {
+    '!discord': 'Please join our {message.channel} Discord server, {message.user}',
+    '!shout-out': 'Check out {message.text_args[0]}, they are a nice streamer',
+}
+
 Message = namedtuple(
     'Message',
     'prefix user channel irc_command irc_args text text_command text_args'
@@ -97,11 +102,35 @@ class Bot:
 
         return message
 
+    def handle_template_commands(self, message, text_command, template, text_args):
+
+        try:
+            text = template.format(**{'message': message})
+            self.send_privmsg(message.channel, text)
+        except:
+            if text_command == '!shout-out' and len(text_args) == 0:
+                self.send_privmsg(message.channel, 'Shout-out usage: !shout-out <name>')
+            
+            else:
+                self.send_privmsg(message.channel, 'Something went wrong')
+
     def handle_message(self, received_msg):
         if len(received_msg) == 0:
             return
         message = self.parse_message(received_msg)
         print(f'> {message}')
+
+        if message.irc_command == 'PING':
+            self.send_command('PONG :tmi.twitch.tv')
+
+        if message.irc_command == 'PRIVMSG':
+            if message.text_command in TEMPLATE_COMMANDS:
+                self.handle_template_commands(
+                    message,
+                    message.text_command,
+                    TEMPLATE_COMMANDS[message.text_command],
+                    message.text_args
+                )
 
     def loop_for_messages(self):
         while True:
