@@ -98,6 +98,8 @@ class Bot:
         return message
 
     def handle_message(self, received_msg):
+        if len(received_msg) == 0:
+            return
         message = self.parse_message(received_msg)
         print(f'> {message}')
 
